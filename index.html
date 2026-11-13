@@ -10,6 +10,7 @@
 
     <link rel="apple-touch-icon" size="180x180" href="./icon.png?v=4">
     <link rel="icon" type="image/png" href="./icon.png?v=4">
+    <link rel="sheetstyle" href="style.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -38,7 +39,6 @@
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .highlight-selected {
-            ring: 3px;
             box-shadow: 0 0 0 3px #2563eb, 0 10px 15px -3px rgba(37, 99, 235, 0.2);
             transform: translateY(-2px);
             z-index: 10;
@@ -297,15 +297,15 @@
     <script>
         // Cấu trúc dữ liệu các học kỳ theo lộ trình 3 năm đã chốt
         const SEMESTERS = [
-            { id: 'HK1', title: 'HK 1', subtitle: 'Năm 1 - Kỳ 1', badge: 'Nền tảng' },
-            { id: 'HK2', title: 'HK 2', subtitle: 'Năm 1 - Kỳ 2', badge: 'Cơ sở' },
-            { id: 'HE1', title: 'HK Hè Năm 1', subtitle: 'Hè rút gọn (6 TC)', badge: 'Đẩy Giải tích' },
-            { id: 'HK3', title: 'HK 3', subtitle: 'Năm 2 - Kỳ 1', badge: 'Bản lề' },
-            { id: 'HK4', title: 'HK 4', subtitle: 'Năm 2 - Kỳ 2', badge: 'Chuyên ngành' },
-            { id: 'HE2', title: 'HK Hè Năm 2', subtitle: 'Hè dọn đại cương', badge: 'Nhẹ nhàng' },
-            { id: 'HK5', title: 'HK 5', subtitle: 'Năm 3 - Kỳ 1', badge: 'Dự án CNTT' },
-            { id: 'HK6', title: 'HK 6', subtitle: 'Năm 3 - Kỳ 2', badge: 'Tốt nghiệp 3 năm' }
-        ];
+            { id: 'HK1', year: 1, title: 'HK 1', subtitle: 'Năm 1 – Kỳ 1', badge: 'Nền tảng' },
+            { id: 'HK2', year: 1, title: 'HK 2', subtitle: 'Năm 1 – Kỳ 2', badge: 'Cơ sở' },
+            { id: 'HE1', year: 1, title: 'HK Hè Năm 1', subtitle: 'Hè rút gọn (6 TC)', badge: 'Đẩy Giải tích' },
+            { id: 'HK3', year: 2, title: 'HK 3', subtitle: 'Năm 2 – Kỳ 1', badge: 'Bản lề' },
+            { id: 'HK4', year: 2, title: 'HK 4', subtitle: 'Năm 2 – Kỳ 2', badge: 'Chuyên ngành' },
+            { id: 'HE2', year: 2, title: 'HK Hè Năm 2', subtitle: 'Hè dọn đại cương', badge: 'Nhẹ nhàng' },
+            { id: 'HK5', year: 3, title: 'HK 5', subtitle: 'Năm 3 – Kỳ 1', badge: 'Dự án CNTT' },
+            { id: 'HK6', year: 3, title: 'HK 6', subtitle: 'Năm 3 – Kỳ 2', badge: 'Tốt nghiệp 3 năm' }
+            ];
 
         // Dữ liệu mặc định chuẩn xác theo sơ đồ TDTU 26H503 & lộ trình 3 năm
         const DEFAULT_COURSES = [
@@ -503,21 +503,54 @@
                 else rankEl.textContent = 'Cảnh báo';
             } else {
                 gpaEl.textContent = '--';
-                rankEl.textContent = 'Mục tiêu ≥7.0';
+                rankEl.textContent = 'Mục tiêu ≥ 7.0';
             }
         }
 
+        // Render khối môn miễn IELTS
         // Render khối môn miễn IELTS
         function renderIeltsCourses() {
             const container = document.getElementById('ieltsCoursesGrid');
             const ieltsList = courses.filter(c => c.semester === 'IELTS');
             container.innerHTML = ieltsList.map(c => createCourseCardHTML(c, true)).join('');
         }
-
-        // Render các cột học kỳ
+       // Render các cột học kỳ (Gộp gọn thành 3 Năm)
         function renderSemesters() {
             const container = document.getElementById('semestersContainer');
-            container.innerHTML = SEMESTERS.map(sem => {
+
+            // Bỏ class grid cũ ở container ngoài (nếu có) để 3 khối Năm xếp dọc gọn gàng
+            container.className = 'space-y-4';
+
+            const yearGroups = [
+                {
+                year: 1,
+                badge: 'NĂM 1',
+                title: 'Nền tảng & Cơ sở ngành (HK 1 • HK 2 • Hè 1)',
+                semIds: ['HK1', 'HK2', 'HE1']
+                },
+                {
+                year: 2,
+                badge: 'NĂM 2',
+                title: 'Chuyên ngành & Đồ án (HK 3 • HK 4 • Hè 2)',
+                semIds: ['HK3', 'HK4', 'HE2']
+                },
+                {
+                year: 3,
+                badge: 'NĂM 3',
+                title: 'Chuyên sâu & Tốt nghiệp (HK 5 • HK 6)',
+                semIds: ['HK5', 'HK6']
+                }
+            ];
+
+            container.innerHTML = yearGroups.map(group => {
+                const yearSems = SEMESTERS.filter(s => group.semIds.includes(s.id));
+                const yearCourses = courses.filter(c => group.semIds.includes(c.semester));
+                const totalYearCredits = yearCourses.reduce((sum, c) => sum + Number(c.credits || 0), 0);
+                const completedYearCredits = yearCourses
+                .filter(c => c.status === 'completed' || c.status === 'exempt')
+                .reduce((sum, c) => sum + Number(c.credits || 0), 0);
+
+                const semsHTML = yearSems.map(sem => {
                 const semCourses = courses.filter(c => c.semester === sem.id);
                 const totalSemCredits = semCourses.reduce((sum, c) => sum + Number(c.credits || 0), 0);
                 const completedSemCredits = semCourses
@@ -530,30 +563,53 @@
                     : (sem.id === 'HK6' ? 'bg-indigo-50 border-indigo-200 text-indigo-950' : 'bg-slate-100 border-slate-200 text-slate-900');
 
                 return `
-                    <div class="bg-white rounded-2xl border border-slate-200 shadow-xs flex flex-col overflow-hidden">
-                        <div class="px-3.5 py-3 border-b ${headerBg}">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <div class="flex items-center gap-1.5">
-                                        <h3 class="font-extrabold text-sm sm:text-base">${sem.title}</h3>
-                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/80 border border-black/10">${sem.badge}</span>
-                                    </div>
-                                    <p class="text-xs opacity-75 mt-0.5">${sem.subtitle}</p>
-                                </div>
-                                <div class="text-right">
-                                    <span class="text-xs font-extrabold px-2.5 py-1 rounded-lg bg-white shadow-2xs border border-slate-200/80">
-                                        ${completedSemCredits}/${totalSemCredits} TC
-                                    </span>
-                                </div>
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-2xs flex flex-col overflow-hidden">
+                    <div class="px-3 py-2.5 border-b ${headerBg}">
+                        <div class="flex items-center justify-between gap-2">
+                        <div>
+                            <div class="flex items-center gap-1.5">
+                            <h4 class="font-extrabold text-sm">${sem.title}</h4>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/80 border border-black/10">${sem.badge}</span>
                             </div>
+                            <p class="text-[11px] opacity-75 mt-0.5">${sem.subtitle}</p>
                         </div>
-                        <div class="p-2.5 space-y-2 flex-1 bg-slate-50/50">
-                            ${semCourses.length > 0
-                                ? semCourses.map(c => createCourseCardHTML(c, false)).join('')
-                                : `<div class="text-center py-6 text-xs text-slate-400 border border-dashed border-slate-200 rounded-xl">Chưa có môn trong kỳ này</div>`
-                            }
+                        <div class="text-right shrink-0">
+                            <span class="text-xs font-extrabold px-2 py-0.5 rounded-lg bg-white shadow-2xs border border-slate-200/80">
+                            ${completedSemCredits}/${totalSemCredits} TC
+                            </span>
+                        </div>
                         </div>
                     </div>
+                    <div class="p-2 space-y-1.5 flex-1 bg-slate-50/50">
+                        ${semCourses.length > 0
+                        ? semCourses.map(c => createCourseCardHTML(c, false)).join('')
+                        : `<div class="text-center py-5 text-xs text-slate-400 border border-dashed border-slate-200 rounded-xl">Chưa có môn trong kỳ này</div>`
+                        }
+                    </div>
+                    </div>
+                `;
+                }).join('');
+
+                const gridColsClass = yearSems.length === 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-2';
+
+                return `
+                <details open class="group bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+                    <summary class="flex items-center justify-between px-4 py-3 bg-slate-50/80 hover:bg-slate-100/80 cursor-pointer list-none select-none border-b border-slate-200/70 transition-colors">
+                    <div class="flex items-center gap-2.5">
+                        <span class="px-2.5 py-1 text-xs font-extrabold rounded-lg bg-slate-900 text-white tracking-wide">${group.badge}</span>
+                        <h3 class="font-bold text-slate-800 text-sm sm:text-base">${group.title}</h3>
+                    </div>
+                    <div class="flex items-center gap-2.5 shrink-0">
+                        <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-blue-50 text-blue-600 border border-blue-200/70">
+                        ${completedYearCredits}/${totalYearCredits} TC
+                        </span>
+                        <span class="text-slate-400 text-xs transition-transform duration-200 group-open:rotate-180">▼</span>
+                    </div>
+                    </summary>
+                    <div class="p-3 grid grid-cols-1 ${gridColsClass} gap-3 bg-slate-100/40">
+                    ${semsHTML}
+                    </div>
+                </details>
                 `;
             }).join('');
         }
