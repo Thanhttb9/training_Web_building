@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lộ Trình Tốt Nghiệp 3 Năm - CNTT TDTU (26H503)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+        /* Tùy chỉnh thanh cuộn ngang mượt mà cho bảng lộ trình */
+        .roadmap-scroll::-webkit-scrollbar {
+            height: 8px;
+        }
+        .roadmap-scroll::-webkit-scrollbar-track {
+            background: #e2e8f0;
+            border-radius: 9999px;
+        }
+        .roadmap-scroll::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 9999px;
+        }
+        .roadmap-scroll::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+        /* Hiệu ứng highlight chuỗi tiên quyết */
+        .course-card {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .highlight-selected {
+            ring: 3px;
+            box-shadow: 0 0 0 3px #2563eb, 0 10px 15px -3px rgba(37, 99, 235, 0.2);
+            transform: translateY(-2px);
+            z-index: 10;
+        }
+        .highlight-prereq {
+            box-shadow: 0 0 0 2.5px #e11d48, 0 4px 12px rgba(225, 29, 72, 0.15);
+            background-color: #fff1f2 !important;
+        }
+        .highlight-unlocks {
+            box-shadow: 0 0 0 2.5px #059669, 0 4px 12px rgba(5, 150, 105, 0.15);
+            background-color: #ecfdf5 !important;
+        }
+        .dimmed-card {
+            opacity: 0.42;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Header & Dashboard Thống Kê Siêu Gọn (Chiếm < 1/3 màn hình điện thoại) -->
+    <header class="bg-slate-900 text-white shadow-md sticky top-0 z-30 border-b border-slate-800">
+        <div class="max-w-[1600px] mx-auto px-2.5 py-2 sm:px-6 sm:py-2.5">
+            <!-- Dòng 1: Tiêu đề rút gọn + Nhóm nút hành động siêu gọn -->
+            <div class="flex items-center justify-between gap-1.5">
+                <div class="min-w-0 flex items-center gap-1.5 flex-wrap">
+                    <h1 class="text-xs sm:text-base font-extrabold tracking-tight text-white truncate">
+                        Lộ trình CNTT • <span class="text-blue-400">26H50301</span>
+                    </h1>
+                    <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-semibold px-1.5 py-0.5 rounded-md whitespace-nowrap">
+                        3 Năm • IELTS 6.0
+                    </span>
+                </div>
+
+                <!-- Các nút tác vụ siêu gọn -->
+                <div class="flex items-center gap-1 shrink-0">
+                    <button onclick="openAddCourseModal()" title="Thêm môn học" class="bg-blue-600 hover:bg-blue-500 text-white text-[11px] sm:text-xs font-bold px-2 py-1 rounded-lg transition shadow-2xs">
+                        + Môn
+                    </button>
+                    <button onclick="exportData()" title="Xuất file sao lưu JSON" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[11px] sm:text-xs font-medium px-2 py-1 rounded-lg transition">
+                        Xuất
+                    </button>
+                    <label title="Nhập file sao lưu JSON" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[11px] sm:text-xs font-medium px-2 py-1 rounded-lg transition cursor-pointer">
+                        Nhập
+                        <input type="file" id="importFile" accept=".json" class="hidden" onchange="importData(event)">
+                    </label>
+                    <button onclick="confirmReset()" title="Đặt lại lộ trình chuẩn" class="bg-rose-950/80 hover:bg-rose-900 border border-rose-800/60 text-rose-200 p-1 rounded-lg transition flex items-center justify-center">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Dòng 2: Lưới 4 ô chỉ số nằm trên 1 hàng ngang siêu gọn -->
+            <div class="grid grid-cols-4 gap-1.5 mt-2">
+                <!-- Ô 1: Tín chỉ -->
+                <div class="bg-slate-800/90 rounded-lg px-2 py-1.5 border border-slate-700/70 flex flex-col justify-between">
+                    <div class="flex justify-between items-center text-[10px] text-slate-400 leading-none">
+                        <span class="truncate">Tín chỉ</span>
+                        <span id="creditPercentText" class="font-bold text-blue-400">0%</span>
+                    </div>
+                    <div class="text-xs sm:text-sm font-extrabold text-white mt-1 leading-none">
+                        <span id="earnedCredits">0</span><span class="text-[10px] font-normal text-slate-400">/157</span>
+                    </div>
+                    <div class="w-full bg-slate-700 h-[2px] rounded-full mt-1 overflow-hidden">
+                        <div id="creditProgressBar" class="bg-gradient-to-r from-blue-500 to-emerald-400 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Ô 2: Đã đạt -->
+                <div class="bg-slate-800/90 rounded-lg px-2 py-1.5 border border-slate-700/70 flex flex-col justify-between">
+                    <div class="text-[10px] text-slate-400 leading-none truncate">Đã đạt</div>
+                    <div class="text-xs sm:text-sm font-extrabold text-emerald-400 mt-1 leading-none">
+                        <span id="completedCount">0</span><span class="text-[10px] font-normal text-slate-400">/<span id="totalCoursesCount">0</span></span>
+                    </div>
+                    <div class="text-[9px] text-slate-400 leading-none mt-1 truncate">Gồm 5 NN</div>
+                </div>
+
+                <!-- Ô 3: Đang học -->
+                <div class="bg-slate-800/90 rounded-lg px-2 py-1.5 border border-slate-700/70 flex flex-col justify-between">
+                    <div class="text-[10px] text-slate-400 leading-none truncate">Đang học</div>
+                    <div class="text-xs sm:text-sm font-extrabold text-amber-400 mt-1 leading-none">
+                        <span id="inProgressCredits">0</span> <span class="text-[10px] font-normal text-slate-400">TC</span>
+                    </div>
+                    <div class="text-[9px] text-slate-400 leading-none mt-1 truncate"><span id="inProgressCount">0</span> môn kỳ này</div>
+                </div>
+
+                <!-- Ô 4: GPA -->
+                <div class="bg-slate-800/90 rounded-lg px-2 py-1.5 border border-slate-700/70 flex flex-col justify-between">
+                    <div class="text-[10px] text-slate-400 leading-none truncate">GPA (10)</div>
+                    <div class="text-xs sm:text-sm font-extrabold text-purple-400 mt-1 leading-none truncate">
+                        <span id="gpaValue">--</span>
+                    </div>
+                    <div id="gpaRank" class="text-[9px] text-slate-300 leading-none mt-1 truncate">Mục tiêu ≥7.0</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Thanh Công Cụ Lọc & Định Hướng Chuyên Ngành -->
+    <section class="bg-white border-b border-slate-200 shadow-sm">
+        <div class="max-w-[1600px] mx-auto px-4 py-3 sm:px-6 flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <!-- Bộ lọc trạng thái & chuỗi -->
+            <div class="flex flex-wrap items-center gap-1.5">
+                <span class="text-xs font-semibold text-slate-500 mr-1">Lọc:</span>
+                <button onclick="setFilter('all')" id="filter-all" class="filter-btn active px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-white transition">Tất cả</button>
+                <button onclick="setFilter('completed')" id="filter-completed" class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition">Đã đạt / Miễn</button>
+                <button onclick="setFilter('in-progress')" id="filter-in-progress" class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition">Đang học</button>
+                <button onclick="setFilter('pending')" id="filter-pending" class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition">Chưa học</button>
+                <button onclick="setFilter('backbone')" id="filter-backbone" class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition">Chuỗi xương sống</button>
+            </div>
+
+            <!-- Chọn nhánh chuyên ngành HK5 & Chú thích màu -->
+            <div class="flex flex-wrap items-center gap-3">
+                <div class="flex items-center gap-2 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                    <span class="text-xs font-semibold text-slate-600 pl-2">Chuyên ngành HK5:</span>
+                    <select id="specializationSelect" onchange="changeSpecialization(this.value)" class="text-xs font-bold bg-white text-blue-700 px-2.5 py-1.5 rounded-lg border border-slate-200 focus:outline-none">
+                        <option value="AI">CN Trí tuệ nhân tạo (50136_01)</option>
+                        <option value="DS">CN Khoa học dữ liệu (50136_02)</option>
+                    </select>
+                </div>
+
+                <!-- Chú thích chuỗi liên kết -->
+                <div class="hidden xl:flex items-center gap-3 text-xs text-slate-600">
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-rose-600 inline-block"></span> Môn tiên quyết/học trước</span>
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-600 inline-block"></span> Môn được mở khóa</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Thanh thông báo chuỗi liên kết khi click vào 1 môn -->
+        <div id="dependencyBanner" class="hidden bg-blue-50 border-t border-blue-200 px-4 py-2 sm:px-6">
+            <div class="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-2 text-xs">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="font-bold text-blue-900" id="bannerCourseTitle">Đang xem chuỗi liên kết:</span>
+                    <span id="bannerPrereqText" class="text-rose-700 font-medium"></span>
+                    <span class="text-slate-400">|</span>
+                    <span id="bannerUnlocksText" class="text-emerald-700 font-medium"></span>
+                </div>
+                <button onclick="clearSelection()" class="text-blue-700 hover:text-blue-900 font-bold underline">Bỏ chọn liên kết</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Khu Vực Chính: Khối Miễn IELTS + Lộ Trình 8 Học Kỳ (3 Năm) -->
+    <main class="flex-1 max-w-[1600px] w-full mx-auto px-4 py-5 sm:px-6 space-y-6">
+
+        <!-- Khối Ngoại Ngữ Miễn Bằng IELTS 6.0 -->
+        <div class="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-4 shadow-sm">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                <div class="flex items-center gap-2">
+                    <span class="bg-emerald-600 text-white text-xs font-bold px-2.5 py-1 rounded-lg">MIỄN HỌC PHẦN • IELTS 6.0</span>
+                    <h2 class="text-sm sm:text-base font-bold text-emerald-950">Khối Kiến Thức Ngoại Ngữ (12 Tín Chỉ + Chuẩn Đầu Ra)</h2>
+                </div>
+                <span class="text-xs font-semibold text-emerald-800">Lưu ý: Nộp xét miễn trên cổng TDTU trước tháng 12/2027</span>
+            </div>
+            <div id="ieltsCoursesGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5">
+                <!-- Render bằng JS -->
+            </div>
+        </div>
+
+        <!-- Bảng Lộ Trình Các Học Kỳ (Cuộn ngang trên Desktop/Mobile hoặc xếp cột linh hoạt) -->
+        <div>
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-base sm:text-lg font-extrabold text-slate-800 flex items-center gap-2">
+                    <span>Sơ Đồ Tích Lũy 3 Năm (HK 1 → HK 6)</span>
+                    <span class="text-xs font-normal text-slate-500 hidden sm:inline">(Bấm vào thẻ môn để xem chuỗi tiên quyết, bấm nút chỉnh sửa để nhập điểm hoặc chuyển kỳ)</span>
+                </h2>
+            </div>
+
+            <div id="semestersContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-start">
+                <!-- Các cột học kỳ được render bằng JS -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Chỉnh Sửa / Nhập Điểm / Chuyển Học Kỳ -->
+    <div id="courseModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl border border-slate-200 animate-fade-in">
+            <div class="flex justify-between items-start border-b border-slate-100 pb-3">
+                <div>
+                    <span id="modalCourseCode" class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">MÃ MÔN</span>
+                    <h3 id="modalTitle" class="text-base font-extrabold text-slate-900 mt-1">Chi tiết môn học</h3>
+                </div>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-700 text-xl font-bold leading-none px-2">&times;</button>
+            </div>
+
+            <form id="courseForm" onsubmit="saveCourseEdit(event)" class="space-y-3.5 mt-4">
+                <input type="hidden" id="editCourseId">
+
+                <div id="customFieldsGroup" class="space-y-3 hidden">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Mã môn học</label>
+                        <input type="text" id="inputCode" class="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="VD: 503099">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Tên môn học</label>
+                        <input type="text" id="inputName" class="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="VD: Điện toán đám mây">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Số tín chỉ</label>
+                        <input type="number" id="inputCredits" min="0" max="15" step="1" value="3" class="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Trạng thái học tập</label>
+                        <select id="inputStatus" class="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <option value="pending">Chưa học</option>
+                            <option value="in-progress">Đang học</option>
+                            <option value="completed">Đã hoàn thành (Đạt)</option>
+                            <option value="exempt">Đã miễn (IELTS 6.0)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Điểm tổng kết (Hệ 10)</label>
+                        <input type="number" id="inputGrade" min="0" max="10" step="0.1" placeholder="VD: 8.5" class="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Học kỳ dự kiến đăng ký</label>
+                    <select id="inputSemester" class="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <option value="HK1">HK 1 (Năm 1 - Kỳ 1)</option>
+                        <option value="HK2">HK 2 (Năm 1 - Kỳ 2)</option>
+                        <option value="HE1">HK Hè Năm 1</option>
+                        <option value="HK3">HK 3 (Năm 2 - Kỳ 1)</option>
+                        <option value="HK4">HK 4 (Năm 2 - Kỳ 2)</option>
+                        <option value="HE2">HK Hè Năm 2</option>
+                        <option value="HK5">HK 5 (Năm 3 - Kỳ 1)</option>
+                        <option value="HK6">HK 6 (Năm 3 - Kỳ 2 - Tốt nghiệp)</option>
+                        <option value="IELTS">Khối Miễn Ngoại Ngữ (IELTS 6.0)</option>
+                    </select>
+                </div>
+
+                <div id="modalDependencyInfo" class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1">
+                    <!-- Hiển thị điều kiện tiên quyết chi tiết -->
+                </div>
+
+                <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+                    <button type="button" id="deleteCustomBtn" onclick="deleteCustomCourse()" class="hidden text-xs font-semibold text-rose-600 hover:text-rose-800 px-2 py-1.5">
+                        Xóa môn này
+                    </button>
+                    <div class="flex gap-2 ml-auto">
+                        <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition">Hủy</button>
+                        <button type="submit" class="px-4 py-2 rounded-xl text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 transition shadow-sm">Lưu thay đổi</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Hộp thông báo Toast thay thế alert() -->
+    <div id="toastBox" class="fixed bottom-4 right-4 bg-slate-900 text-white text-xs sm:text-sm font-medium px-4 py-3 rounded-xl shadow-xl border border-slate-700 transform translate-y-20 opacity-0 transition-all duration-300 z-50 flex items-center gap-2">
+        <span id="toastMessage">Đã lưu thay đổi</span>
+    </div>
+
+    <script>
+        // Cấu trúc dữ liệu các học kỳ theo lộ trình 3 năm đã chốt
+        const SEMESTERS = [
+            { id: 'HK1', title: 'HK 1', subtitle: 'Năm 1 - Kỳ 1', badge: 'Nền tảng' },
+            { id: 'HK2', title: 'HK 2', subtitle: 'Năm 1 - Kỳ 2', badge: 'Cơ sở' },
+            { id: 'HE1', title: 'HK Hè Năm 1', subtitle: 'Hè rút gọn (6 TC)', badge: 'Đẩy Giải tích' },
+            { id: 'HK3', title: 'HK 3', subtitle: 'Năm 2 - Kỳ 1', badge: 'Bản lề' },
+            { id: 'HK4', title: 'HK 4', subtitle: 'Năm 2 - Kỳ 2', badge: 'Chuyên ngành' },
+            { id: 'HE2', title: 'HK Hè Năm 2', subtitle: 'Hè dọn đại cương', badge: 'Nhẹ nhàng' },
+            { id: 'HK5', title: 'HK 5', subtitle: 'Năm 3 - Kỳ 1', badge: 'Dự án CNTT' },
+            { id: 'HK6', title: 'HK 6', subtitle: 'Năm 3 - Kỳ 2', badge: 'Tốt nghiệp 3 năm' }
+        ];
+
+        // Dữ liệu mặc định chuẩn xác theo sơ đồ TDTU 26H503 & lộ trình 3 năm
+        const DEFAULT_COURSES = [
+            // Khối miễn IELTS 6.0 (12 TC + chứng chỉ)
+            { id: 'P15H11', code: 'P15H11', name: 'Tiếng Anh 1', credits: 3, semester: 'IELTS', status: 'exempt', grade: null, prereqs: [], type: 'ielts', backbone: false },
+            { id: 'P15H12', code: 'P15H12', name: 'Tiếng Anh 2', credits: 3, semester: 'IELTS', status: 'exempt', grade: null, prereqs: ['P15H11'], type: 'ielts', backbone: false },
+            { id: 'P15H13', code: 'P15H13', name: 'Tiếng Anh 3', credits: 3, semester: 'IELTS', status: 'exempt', grade: null, prereqs: ['P15H12'], type: 'ielts', backbone: false },
+            { id: 'P15H14', code: 'P15H14', name: 'Tiếng Anh 4', credits: 3, semester: 'IELTS', status: 'exempt', grade: null, prereqs: ['P15H13'], type: 'ielts', backbone: false },
+            { id: 'P15CSS', code: 'P15CSS', name: 'Chứng chỉ tiếng Anh (CĐR)', credits: 0, semester: 'IELTS', status: 'exempt', grade: null, prereqs: ['P15H14'], type: 'ielts', backbone: true },
+
+            // HK 1 (Năm 1 - Kỳ 1)
+            { id: '501032', code: '501032', name: 'Đại số tuyến tính cho CNTT', credits: 4, semester: 'HK1', status: 'completed', grade: null, prereqs: [], type: 'core', backbone: false },
+            { id: '502046', code: '502046', name: 'Nhập môn Mạng máy tính', credits: 4, semester: 'HK1', status: 'completed', grade: null, prereqs: [], type: 'core', backbone: false },
+            { id: '501042', code: '501042', name: 'Phương pháp lập trình', credits: 4, semester: 'HK1', status: 'completed', grade: null, prereqs: [], type: 'prereq', backbone: true },
+            { id: '302053', code: '302053', name: 'Pháp luật đại cương', credits: 2, semester: 'HK1', status: 'completed', grade: null, prereqs: [], type: 'general', backbone: false },
+            { id: '002031', code: '002031-34', name: 'GDQP & An ninh (HP 1-4)', credits: 8, semester: 'HK1', status: 'completed', grade: null, prereqs: [], type: 'general', backbone: false },
+            { id: 'L00019', code: 'L00019', name: 'Kỹ năng thái độ sống 1', credits: 0, semester: 'HK1', status: 'completed', grade: null, prereqs: [], type: 'skill', backbone: false },
+
+            // HK 2 (Năm 1 - Kỳ 2)
+            { id: '503005', code: '503005', name: 'Lập trình hướng đối tượng', credits: 4, semester: 'HK2', status: 'in-progress', grade: null, prereqs: ['501042'], type: 'prereq', backbone: true },
+            { id: '502044', code: '502044', name: 'Tổ chức máy tính', credits: 4, semester: 'HK2', status: 'in-progress', grade: null, prereqs: [], type: 'core', backbone: false },
+            { id: '306102', code: '306102', name: 'Triết học Mác - Lênin', credits: 3, semester: 'HK2', status: 'in-progress', grade: null, prereqs: [], type: 'politics', backbone: false },
+            { id: '001001', code: '001001', name: 'Bơi lội', credits: 1, semester: 'HK2', status: 'in-progress', grade: null, prereqs: [], type: 'pe', backbone: false },
+            { id: '50130', code: '50130', name: 'Tự chọn GDTC 1', credits: 1, semester: 'HK2', status: 'in-progress', grade: null, prereqs: [], type: 'pe', backbone: false },
+
+            // HK Hè Năm 1 (6 TC - Đã đưa Giải tích vào theo chốt)
+            { id: '501031', code: '501031', name: 'Giải tích ứng dụng cho CNTT', credits: 4, semester: 'HE1', status: 'pending', grade: null, prereqs: [], type: 'core', backbone: false },
+            { id: '306103', code: '306103', name: 'Kinh tế chính trị Mác - Lênin', credits: 2, semester: 'HE1', status: 'pending', grade: null, prereqs: ['306102'], type: 'politics', backbone: false },
+            { id: 'L00033', code: 'L00033', name: 'Kỹ năng thái độ sống 2', credits: 0, semester: 'HE1', status: 'pending', grade: null, prereqs: ['L00019'], type: 'skill', backbone: false },
+
+            // HK 3 (Năm 2 - Kỳ 1 - 17 TC)
+            { id: '504008', code: '504008', name: 'Cấu trúc dữ liệu và giải thuật', credits: 4, semester: 'HK3', status: 'pending', grade: null, prereqs: ['503005'], type: 'prereq', backbone: true },
+            { id: '502047', code: '502047', name: 'Nhập môn hệ điều hành', credits: 4, semester: 'HK3', status: 'pending', grade: null, prereqs: ['502044'], type: 'core', backbone: false },
+            { id: '501044', code: '501044', name: 'Cấu trúc rời rạc', credits: 4, semester: 'HK3', status: 'pending', grade: null, prereqs: ['501032'], type: 'core', backbone: false },
+            { id: '502061', code: '502061', name: 'Xác suất và thống kê ứng dụng CNTT', credits: 4, semester: 'HK3', status: 'pending', grade: null, prereqs: ['501031', '501032'], type: 'core', backbone: false },
+            { id: '50127', code: '50127', name: 'Nhóm tự chọn Kỹ năng (PTBV)', credits: 1, semester: 'HK3', status: 'pending', grade: null, prereqs: [], type: 'skill', backbone: false },
+
+            // HK 4 (Năm 2 - Kỳ 2 - 18 TC)
+            { id: '502051', code: '502051', name: 'Hệ cơ sở dữ liệu', credits: 4, semester: 'HK4', status: 'pending', grade: null, prereqs: ['504008'], type: 'core', backbone: false },
+            { id: '502045', code: '502045', name: 'Công nghệ phần mềm', credits: 4, semester: 'HK4', status: 'pending', grade: null, prereqs: ['504008'], type: 'prereq', backbone: true },
+            { id: '503073', code: '503073', name: 'Lập trình web và ứng dụng', credits: 4, semester: 'HK4', status: 'pending', grade: null, prereqs: ['503005'], type: 'core', backbone: false },
+            { id: '503043', code: '503043', name: 'Nhập môn Trí tuệ nhân tạo', credits: 4, semester: 'HK4', status: 'pending', grade: null, prereqs: ['504008', '501044'], type: 'core', backbone: false },
+            { id: '306104', code: '306104', name: 'Chủ nghĩa xã hội khoa học', credits: 2, semester: 'HK4', status: 'pending', grade: null, prereqs: ['306103'], type: 'politics', backbone: false },
+
+            // HK Hè Năm 2 (5 TC)
+            { id: '306105', code: '306105', name: 'Lịch sử Đảng Cộng sản Việt Nam', credits: 2, semester: 'HE2', status: 'pending', grade: null, prereqs: ['306104'], type: 'politics', backbone: false },
+            { id: '306106', code: '306106', name: 'Tư tưởng Hồ Chí Minh', credits: 2, semester: 'HE2', status: 'pending', grade: null, prereqs: ['306104'], type: 'politics', backbone: false },
+            { id: '50131', code: '50131', name: 'Tự chọn GDTC 2', credits: 1, semester: 'HE2', status: 'pending', grade: null, prereqs: [], type: 'pe', backbone: false },
+            { id: 'L00041', code: 'L00041', name: 'Kỹ năng thái độ sống 3', credits: 0, semester: 'HE2', status: 'pending', grade: null, prereqs: ['L00033'], type: 'skill', backbone: false },
+
+            // HK 5 (Năm 3 - Kỳ 1 - 21 TC)
+            { id: '504091', code: '504091', name: 'Dự án Công nghệ thông tin', credits: 4, semester: 'HK5', status: 'pending', grade: null, prereqs: ['502045', '502051', 'P15CSS'], type: 'prereq', backbone: true },
+            { id: '503044', code: '503044', name: 'Nhập môn Học máy', credits: 4, semester: 'HK5', status: 'pending', grade: null, prereqs: ['502061', '503043'], type: 'core', backbone: false },
+            { id: '503040', code: '503040', name: 'Nhập môn Xử lý ảnh số', credits: 4, semester: 'HK5', status: 'pending', grade: null, prereqs: ['504008', '501032'], type: 'core', backbone: false },
+            { id: '503067', code: '503067', name: 'Phân tích và trực quan hóa dữ liệu', credits: 4, semester: 'HK5', status: 'pending', grade: null, prereqs: ['502051', '502061'], type: 'core', backbone: false },
+            { id: 'SPEC_HK5', code: '50136_01', name: '2 môn CN Trí tuệ nhân tạo (Tự chọn)', credits: 5, semester: 'HK5', status: 'pending', grade: null, prereqs: ['503043'], type: 'spec', backbone: false },
+
+            // HK 6 (Năm 3 - Kỳ 2 - 17 TC - Tốt nghiệp)
+            { id: '504074', code: '504074', name: 'Kiến tập công nghiệp', credits: 4, semester: 'HK6', status: 'pending', grade: null, prereqs: ['504091'], type: 'grad', backbone: true },
+            { id: '502090', code: '502090', name: 'Tập sự nghề nghiệp', credits: 4, semester: 'HK6', status: 'pending', grade: null, prereqs: ['504091'], type: 'grad', backbone: true },
+            { id: '513CM6', code: '513CM6', name: 'Kỹ năng thực hành chuyên môn', credits: 1, semester: 'HK6', status: 'pending', grade: null, prereqs: ['504091'], type: 'skill', backbone: false },
+            { id: '50135', code: '50135_01', name: 'Khóa luận / Đồ án tốt nghiệp', credits: 8, semester: 'HK6', status: 'pending', grade: null, prereqs: ['504091', 'P15CSS'], type: 'grad', backbone: true }
+        ];
+
+        let courses = [];
+        let currentFilter = 'all';
+        let selectedCourseId = null;
+        let specialization = 'AI';
+
+        // Khởi tạo dữ liệu từ localStorage hoặc mặc định
+        function initApp() {
+            const saved = localStorage.getItem('tdtu_it_roadmap_v1');
+            const savedSpec = localStorage.getItem('tdtu_it_spec_v1');
+            if (savedSpec) {
+                specialization = savedSpec;
+                document.getElementById('specializationSelect').value = specialization;
+            }
+            if (saved) {
+                try {
+                    courses = JSON.parse(saved);
+                } catch (e) {
+                    courses = JSON.parse(JSON.stringify(DEFAULT_COURSES));
+                }
+            } else {
+                courses = JSON.parse(JSON.stringify(DEFAULT_COURSES));
+            }
+            renderAll();
+        }
+
+        function saveToStorage() {
+            localStorage.setItem('tdtu_it_roadmap_v1', JSON.stringify(courses));
+            localStorage.setItem('tdtu_it_spec_v1', specialization);
+        }
+
+        // Chuyển đổi nhánh chuyên ngành HK 5
+        function changeSpecialization(val) {
+            specialization = val;
+            const specCourse = courses.find(c => c.id === 'SPEC_HK5');
+            if (specCourse) {
+                if (val === 'AI') {
+                    specCourse.code = '50136_01';
+                    specCourse.name = '2 môn CN Trí tuệ nhân tạo (Tự chọn)';
+                } else {
+                    specCourse.code = '50136_02';
+                    specCourse.name = '2 môn CN Khoa học dữ liệu (Tự chọn)';
+                }
+            }
+            saveToStorage();
+            renderAll();
+            showToast(`Đã cập nhật chuyên ngành HK 5: ${val === 'AI' ? 'Trí tuệ nhân tạo' : 'Khoa học dữ liệu'}`);
+        }
+
+        // Tìm toàn bộ chuỗi môn học trước (đệ quy)
+        function getAllPrereqs(courseId, visited = new Set()) {
+            const course = courses.find(c => c.id === courseId);
+            if (!course || !course.prereqs) return visited;
+            course.prereqs.forEach(pid => {
+                if (!visited.has(pid)) {
+                    visited.add(pid);
+                    getAllPrereqs(pid, visited);
+                }
+            });
+            return visited;
+        }
+
+        // Tìm toàn bộ chuỗi môn được mở khóa phía sau (đệ quy)
+        function getAllUnlocks(courseId, visited = new Set()) {
+            courses.forEach(c => {
+                if (c.prereqs && c.prereqs.includes(courseId) && !visited.has(c.id)) {
+                    visited.add(c.id);
+                    getAllUnlocks(c.id, visited);
+                }
+            });
+            return visited;
+        }
+
+        // Render toàn bộ giao diện
+        function renderAll() {
+            renderStats();
+            renderIeltsCourses();
+            renderSemesters();
+            updateDependencyBanner();
+        }
+
+        // Cập nhật bảng thống kê tổng quan
+        function renderStats() {
+            const totalTarget = 157;
+            let earned = 0;
+            let completedCourses = 0;
+            let inProgCredits = 0;
+            let inProgCourses = 0;
+
+            let weightedScoreSum = 0;
+            let gradedCredits = 0;
+
+            courses.forEach(c => {
+                if (c.status === 'completed' || c.status === 'exempt') {
+                    earned += Number(c.credits || 0);
+                    completedCourses++;
+                }
+                if (c.status === 'in-progress') {
+                    inProgCredits += Number(c.credits || 0);
+                    inProgCourses++;
+                }
+                if (c.status === 'completed' && c.grade !== null && c.grade !== '' && Number(c.credits) > 0) {
+                    weightedScoreSum += Number(c.grade) * Number(c.credits);
+                    gradedCredits += Number(c.credits);
+                }
+            });
+
+            // Cộng bù các môn tự chọn nhóm nhỏ nếu tổng mặc định chưa chạm 157 khi hoàn thành 100%
+            const rawTotal = courses.reduce((sum, c) => sum + Number(c.credits || 0), 0);
+            const displayEarned = completedCourses === courses.length && rawTotal < totalTarget ? totalTarget : earned;
+            const percent = Math.min(100, Math.round((displayEarned / totalTarget) * 100));
+
+            document.getElementById('earnedCredits').textContent = displayEarned;
+            document.getElementById('creditPercentText').textContent = `${percent}%`;
+            document.getElementById('creditProgressBar').style.width = `${percent}%`;
+
+            document.getElementById('completedCount').textContent = completedCourses;
+            document.getElementById('totalCoursesCount').textContent = courses.length;
+
+            document.getElementById('inProgressCredits').textContent = inProgCredits;
+            document.getElementById('inProgressCount').textContent = inProgCourses;
+
+            const gpaEl = document.getElementById('gpaValue');
+            const rankEl = document.getElementById('gpaRank');
+            if (gradedCredits > 0) {
+                const gpa = (weightedScoreSum / gradedCredits).toFixed(2);
+                gpaEl.textContent = gpa;
+                if (gpa >= 8.5) rankEl.textContent = 'Xuất sắc (Max TC)';
+                else if (gpa >= 8.0) rankEl.textContent = 'Giỏi (Mở trần)';
+                else if (gpa >= 7.0) rankEl.textContent = 'Khá (Đủ chuẩn)';
+                else if (gpa >= 5.0) rankEl.textContent = 'TB (Cần kéo)';
+                else rankEl.textContent = 'Cảnh báo';
+            } else {
+                gpaEl.textContent = '--';
+                rankEl.textContent = 'Mục tiêu ≥7.0';
+            }
+        }
+
+        // Render khối môn miễn IELTS
+        function renderIeltsCourses() {
+            const container = document.getElementById('ieltsCoursesGrid');
+            const ieltsList = courses.filter(c => c.semester === 'IELTS');
+            container.innerHTML = ieltsList.map(c => createCourseCardHTML(c, true)).join('');
+        }
+
+        // Render các cột học kỳ
+        function renderSemesters() {
+            const container = document.getElementById('semestersContainer');
+            container.innerHTML = SEMESTERS.map(sem => {
+                const semCourses = courses.filter(c => c.semester === sem.id);
+                const totalSemCredits = semCourses.reduce((sum, c) => sum + Number(c.credits || 0), 0);
+                const completedSemCredits = semCourses
+                    .filter(c => c.status === 'completed' || c.status === 'exempt')
+                    .reduce((sum, c) => sum + Number(c.credits || 0), 0);
+
+                const isSummer = sem.id.startsWith('HE');
+                const headerBg = isSummer
+                    ? 'bg-amber-50 border-amber-200 text-amber-950'
+                    : (sem.id === 'HK6' ? 'bg-indigo-50 border-indigo-200 text-indigo-950' : 'bg-slate-100 border-slate-200 text-slate-900');
+
+                return `
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-xs flex flex-col overflow-hidden">
+                        <div class="px-3.5 py-3 border-b ${headerBg}">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <div class="flex items-center gap-1.5">
+                                        <h3 class="font-extrabold text-sm sm:text-base">${sem.title}</h3>
+                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/80 border border-black/10">${sem.badge}</span>
+                                    </div>
+                                    <p class="text-xs opacity-75 mt-0.5">${sem.subtitle}</p>
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-xs font-extrabold px-2.5 py-1 rounded-lg bg-white shadow-2xs border border-slate-200/80">
+                                        ${completedSemCredits}/${totalSemCredits} TC
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-2.5 space-y-2 flex-1 bg-slate-50/50">
+                            ${semCourses.length > 0
+                                ? semCourses.map(c => createCourseCardHTML(c, false)).join('')
+                                : `<div class="text-center py-6 text-xs text-slate-400 border border-dashed border-slate-200 rounded-xl">Chưa có môn trong kỳ này</div>`
+                            }
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Tạo HTML cho từng thẻ môn học
+        function createCourseCardHTML(c, isCompact) {
+            const prereqSet = selectedCourseId ? getAllPrereqs(selectedCourseId) : new Set();
+            const unlockSet = selectedCourseId ? getAllUnlocks(selectedCourseId) : new Set();
+
+            // Kiểm tra bộ lọc
+            let matchesFilter = true;
+            if (currentFilter === 'completed' && c.status !== 'completed' && c.status !== 'exempt') matchesFilter = false;
+            if (currentFilter === 'in-progress' && c.status !== 'in-progress') matchesFilter = false;
+            if (currentFilter === 'pending' && c.status !== 'pending') matchesFilter = false;
+            if (currentFilter === 'backbone' && !c.backbone) matchesFilter = false;
+
+            // Hiệu ứng highlight liên kết
+            let highlightClass = '';
+            if (selectedCourseId) {
+                if (c.id === selectedCourseId) highlightClass = 'highlight-selected';
+                else if (prereqSet.has(c.id)) highlightClass = 'highlight-prereq';
+                else if (unlockSet.has(c.id)) highlightClass = 'highlight-unlocks';
+                else highlightClass = 'dimmed-card';
+            } else if (!matchesFilter) {
+                highlightClass = 'dimmed-card';
+            }
+
+            // Màu sắc theo trạng thái
+            let statusStyles = 'bg-white border-slate-200 hover:border-blue-300';
+            let statusBadge = '<span class="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Chưa học</span>';
+
+            if (c.status === 'completed') {
+                statusStyles = 'bg-emerald-50/70 border-emerald-200 hover:border-emerald-400';
+                statusBadge = `<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800">Đã đạt${c.grade ? ` • ${c.grade}` : ''}</span>`;
+            } else if (c.status === 'exempt') {
+                statusStyles = 'bg-teal-50/80 border-teal-200 hover:border-teal-400';
+                statusBadge = '<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-teal-100 text-teal-800">Miễn IELTS</span>';
+            } else if (c.status === 'in-progress') {
+                statusStyles = 'bg-amber-50/80 border-amber-300 hover:border-amber-400';
+                statusBadge = '<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-800">Đang học</span>';
+            }
+
+            // Chấm màu ký hiệu TDTU góc phải
+            let dotIndicator = '';
+            if (c.backbone) {
+                dotIndicator = '<span title="Môn tiên quyết chuỗi xương sống" class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block shrink-0"></span>';
+            } else if (c.prereqs && c.prereqs.length > 0) {
+                dotIndicator = '<span title="Có môn học trước" class="w-2.5 h-2.5 rounded-full bg-indigo-500 inline-block shrink-0"></span>';
+            }
+
+            return `
+                <div onclick="handleCardClick(event, '${c.id}')"
+                     class="course-card cursor-pointer rounded-xl border p-2.5 shadow-2xs select-none ${statusStyles} ${highlightClass}">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="text-[11px] font-mono font-bold text-slate-500">${c.code}</span>
+                            <span class="text-[11px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.2 rounded">${c.credits} TC</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            ${dotIndicator}
+                            <button onclick="openEditModal(event, '${c.id}')" title="Nhập điểm / Chỉnh sửa" class="text-slate-400 hover:text-blue-600 p-0.5 rounded transition">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="font-bold text-xs sm:text-[13px] text-slate-800 mt-1 leading-snug">
+                        ${c.name}
+                    </div>
+
+                    <div class="flex items-center justify-between mt-2 pt-1.5 border-t border-black/5">
+                        <button onclick="cycleCourseStatus(event, '${c.id}')" title="Bấm để đổi nhanh trạng thái" class="hover:opacity-80 transition">
+                            ${statusBadge}
+                        </button>
+                        ${c.prereqs && c.prereqs.length > 0
+                            ? `<span class="text-[10px] text-slate-400 font-medium">Sau: ${c.prereqs.join(', ')}</span>`
+                            : `<span class="text-[10px] text-slate-400">Độc lập</span>`
+                        }
+                    </div>
+                </div>
+            `;
+        }
+
+        // Bấm vào thẻ môn học để highlight chuỗi tiên quyết
+        function handleCardClick(event, id) {
+            if (selectedCourseId === id) {
+                selectedCourseId = null;
+            } else {
+                selectedCourseId = id;
+            }
+            renderAll();
+        }
+
+        // Đổi nhanh trạng thái khi bấm vào badge trạng thái trên thẻ
+        function cycleCourseStatus(event, id) {
+            event.stopPropagation();
+            const course = courses.find(c => c.id === id);
+            if (!course) return;
+
+            const order = ['pending', 'in-progress', 'completed'];
+            if (course.status === 'exempt') {
+                course.status = 'completed';
+            } else {
+                const nextIdx = (order.indexOf(course.status) + 1) % order.length;
+                course.status = order[nextIdx];
+            }
+            saveToStorage();
+            renderAll();
+        }
+
+        function clearSelection() {
+            selectedCourseId = null;
+            renderAll();
+        }
+
+        function updateDependencyBanner() {
+            const banner = document.getElementById('dependencyBanner');
+            if (!selectedCourseId) {
+                banner.classList.add('hidden');
+                return;
+            }
+            const course = courses.find(c => c.id === selectedCourseId);
+            if (!course) return;
+
+            const prereqIds = Array.from(getAllPrereqs(selectedCourseId));
+            const unlockIds = Array.from(getAllUnlocks(selectedCourseId));
+
+            const prereqNames = prereqIds.map(pid => {
+                const found = courses.find(c => c.id === pid);
+                return found ? found.name : pid;
+            });
+            const unlockNames = unlockIds.map(uid => {
+                const found = courses.find(c => c.id === uid);
+                return found ? found.name : uid;
+            });
+
+            document.getElementById('bannerCourseTitle').textContent = `Môn đang chọn: ${course.name} (${course.code})`;
+            document.getElementById('bannerPrereqText').textContent = prereqNames.length > 0
+                ? `Cần học trước: ${prereqNames.join(' → ')}`
+                : 'Không yêu cầu môn học trước';
+            document.getElementById('bannerUnlocksText').textContent = unlockNames.length > 0
+                ? `Mở khóa cho: ${unlockNames.join(', ')}`
+                : 'Môn cuối chuỗi';
+
+            banner.classList.remove('hidden');
+        }
+
+        function setFilter(filterName) {
+            currentFilter = filterName;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('bg-slate-900', 'text-white');
+                if (!btn.id.includes('backbone')) {
+                    btn.classList.add('bg-slate-100', 'text-slate-700');
+                }
+            });
+            const activeBtn = document.getElementById(`filter-${filterName}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('bg-slate-100', 'text-slate-700');
+                activeBtn.classList.add('bg-slate-900', 'text-white');
+            }
+            renderAll();
+        }
+
+        // Mở Modal chỉnh sửa môn học
+        function openEditModal(event, id) {
+            event.stopPropagation();
+            const course = courses.find(c => c.id === id);
+            if (!course) return;
+
+            document.getElementById('editCourseId').value = course.id;
+            document.getElementById('modalCourseCode').textContent = course.code;
+            document.getElementById('modalTitle').textContent = course.name;
+            document.getElementById('inputStatus').value = course.status;
+            document.getElementById('inputGrade').value = course.grade !== null ? course.grade : '';
+            document.getElementById('inputSemester').value = course.semester;
+
+            const customGroup = document.getElementById('customFieldsGroup');
+            const deleteBtn = document.getElementById('deleteCustomBtn');
+
+            if (course.isCustom) {
+                customGroup.classList.remove('hidden');
+                deleteBtn.classList.remove('hidden');
+                document.getElementById('inputCode').value = course.code;
+                document.getElementById('inputName').value = course.name;
+                document.getElementById('inputCredits').value = course.credits;
+            } else {
+                customGroup.classList.add('hidden');
+                deleteBtn.classList.add('hidden');
+            }
+
+            // Hiển thị thông tin điều kiện
+            const prereqNames = (course.prereqs || []).map(pid => {
+                const found = courses.find(c => c.id === pid);
+                return found ? `${found.name} (${found.code})` : pid;
+            });
+            const unlockNames = Array.from(getAllUnlocks(course.id)).map(uid => {
+                const found = courses.find(c => c.id === uid);
+                return found ? found.name : uid;
+            });
+
+            document.getElementById('modalDependencyInfo').innerHTML = `
+                <div><span class="font-bold text-slate-700">Số tín chỉ:</span> ${course.credits} TC</div>
+                <div><span class="font-bold text-rose-700">Môn tiên quyết / học trước:</span> ${prereqNames.length ? prereqNames.join(', ') : 'Không có'}</div>
+                <div><span class="font-bold text-emerald-700">Mở khóa các môn sau:</span> ${unlockNames.length ? unlockNames.join(', ') : 'Không có'}</div>
+            `;
+
+            const modal = document.getElementById('courseModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        // Mở Modal thêm môn mới
+        function openAddCourseModal() {
+            document.getElementById('editCourseId').value = 'NEW';
+            document.getElementById('modalCourseCode').textContent = 'MÔN TÙY CHỈNH';
+            document.getElementById('modalTitle').textContent = 'Thêm môn học vào lộ trình';
+            document.getElementById('customFieldsGroup').classList.remove('hidden');
+            document.getElementById('deleteCustomBtn').classList.add('hidden');
+
+            document.getElementById('inputCode').value = '';
+            document.getElementById('inputName').value = '';
+            document.getElementById('inputCredits').value = 3;
+            document.getElementById('inputStatus').value = 'pending';
+            document.getElementById('inputGrade').value = '';
+            document.getElementById('inputSemester').value = 'HK5';
+            document.getElementById('modalDependencyInfo').innerHTML = `<div class="text-slate-500">Môn học thêm mới sẽ tự động cộng vào tổng tín chỉ tích lũy của học kỳ được chọn.</div>`;
+
+            const modal = document.getElementById('courseModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('courseModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function saveCourseEdit(event) {
+            event.preventDefault();
+            const id = document.getElementById('editCourseId').value;
+            const status = document.getElementById('inputStatus').value;
+            const gradeVal = document.getElementById('inputGrade').value;
+            const grade = gradeVal !== '' ? parseFloat(gradeVal) : null;
+            const semester = document.getElementById('inputSemester').value;
+
+            if (id === 'NEW') {
+                const code = document.getElementById('inputCode').value.trim() || 'TC_NEW';
+                const name = document.getElementById('inputName').value.trim();
+                const credits = parseInt(document.getElementById('inputCredits').value) || 0;
+                if (!name) {
+                    showToast('Vui lòng nhập tên môn học!');
+                    return;
+                }
+                courses.push({
+                    id: 'CUSTOM_' + Date.now(),
+                    code,
+                    name,
+                    credits,
+                    semester,
+                    status,
+                    grade,
+                    prereqs: [],
+                    type: 'custom',
+                    backbone: false,
+                    isCustom: true
+                });
+                showToast(`Đã thêm môn "${name}" vào ${semester}`);
+            } else {
+                const course = courses.find(c => c.id === id);
+                if (course) {
+                    course.status = status;
+                    course.grade = grade;
+                    course.semester = semester;
+                    if (course.isCustom) {
+                        course.code = document.getElementById('inputCode').value.trim() || course.code;
+                        course.name = document.getElementById('inputName').value.trim() || course.name;
+                        course.credits = parseInt(document.getElementById('inputCredits').value) || 0;
+                    }
+                    showToast(`Đã cập nhật môn "${course.name}"`);
+                }
+            }
+
+            saveToStorage();
+            closeModal();
+            renderAll();
+        }
+
+        function deleteCustomCourse() {
+            const id = document.getElementById('editCourseId').value;
+            courses = courses.filter(c => c.id !== id);
+            saveToStorage();
+            closeModal();
+            renderAll();
+            showToast('Đã xóa môn học tùy chỉnh');
+        }
+
+        // Xuất dữ liệu JSON
+        function exportData() {
+            const dataStr = JSON.stringify({ specialization, courses }, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'lo-trinh-3-nam-cntt-tdtu.json';
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Đã xuất file sao lưu JSON');
+        }
+
+        // Nhập dữ liệu JSON
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if (parsed.courses && Array.isArray(parsed.courses)) {
+                        courses = parsed.courses;
+                        if (parsed.specialization) {
+                            specialization = parsed.specialization;
+                            document.getElementById('specializationSelect').value = specialization;
+                        }
+                        saveToStorage();
+                        renderAll();
+                        showToast('Đã khôi phục dữ liệu lộ trình thành công!');
+                    }
+                } catch (err) {
+                    showToast('File JSON không hợp lệ!');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Đặt lại lộ trình mặc định (không dùng confirm() của trình duyệt)
+        let resetPending = false;
+        function confirmReset() {
+            if (!resetPending) {
+                resetPending = true;
+                showToast('Bấm "Đặt lại chuẩn" lần nữa trong 3 giây để xác nhận khôi phục mặc định');
+                setTimeout(() => { resetPending = false; }, 3000);
+                return;
+            }
+            resetPending = false;
+            courses = JSON.parse(JSON.stringify(DEFAULT_COURSES));
+            specialization = 'AI';
+            document.getElementById('specializationSelect').value = 'AI';
+            selectedCourseId = null;
+            saveToStorage();
+            renderAll();
+            showToast('Đã khôi phục về lộ trình 3 năm chuẩn!');
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toastBox');
+            document.getElementById('toastMessage').textContent = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 2800);
+        }
+
+        window.onload = initApp;
+    </script>
+</body>
+</html>
